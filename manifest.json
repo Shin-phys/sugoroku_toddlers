@@ -1,0 +1,17 @@
+{
+  "name": "かずの すごろく",
+  "short_name": "かずのすごろく",
+  "description": "3〜5歳向け 数直線すごろく（家庭用・オフライン対応）",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#FFF6E5",
+  "theme_color": "#FFF6E5",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

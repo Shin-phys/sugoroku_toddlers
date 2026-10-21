@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="かずのすごろく">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#FFF6E5">
+<title>かずの すごろく</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- タイトル -->
+  <section id="screen-title" class="screen active" aria-label="タイトル">
+    <h1 class="title-logo">かずの すごろく</h1>
+    <div class="title-art" aria-hidden="true">
+      <div class="mini-row">
+        <span class="mini-cell">1</span><span class="mini-cell">2</span><span class="mini-cell">3</span><span class="mini-cell">4</span><span class="mini-cell">5</span>
+      </div>
+      <div class="mini-pieces">
+        <span class="piece-art kid-art"></span>
+        <span class="piece-art turtle-art"></span>
+      </div>
+    </div>
+    <button id="btn-start" class="big-btn" type="button">はじめる</button>
+    <div id="title-limit" class="title-limit" hidden>
+      <div class="moon" aria-hidden="true"></div>
+      <p>また あしたね</p>
+    </div>
+  </section>
+
+  <!-- ゲーム -->
+  <section id="screen-game" class="screen" aria-label="すごろく">
+    <div class="topbar">
+      <div id="hint" class="hint" aria-live="polite"></div>
+    </div>
+    <div id="board-wrap">
+      <div id="board"></div>
+    </div>
+    <div class="bottombar">
+      <button id="roulette" class="roulette" type="button" aria-label="ルーレット">
+        <span id="roulette-num" class="roulette-num">?</span>
+      </button>
+      <div id="turn-icon" class="turn-icon" aria-hidden="true"></div>
+      <div id="prompt" class="prompt" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ゲーム終了 -->
+  <div id="end-overlay" class="overlay" hidden>
+    <div class="end-card">
+      <div class="end-star" aria-hidden="true"></div>
+      <div id="end-limit" class="end-limit" hidden>
+        <div class="moon" aria-hidden="true"></div>
+        <p>また あしたね</p>
+      </div>
+      <div class="end-buttons">
+        <button id="btn-again" class="big-btn" type="button">もう1回</button>
+        <button id="btn-quit" class="big-btn sub" type="button">おしまい</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- かずの せん チェック -->
+  <section id="screen-check" class="screen" aria-label="かずのせん チェック">
+    <button id="check-close" class="close-x" type="button" aria-label="チェックをやめる">×</button>
+    <div id="check-num" class="check-num"></div>
+    <div id="check-area" class="check-area">
+      <div class="nl">
+        <div class="nl-line"></div>
+        <div class="nl-tick left"><span>0</span></div>
+        <div class="nl-tick right"><span id="nl-right">10</span></div>
+        <div id="nl-mark" class="nl-mark" hidden></div>
+      </div>
+    </div>
+    <div id="check-msg" class="check-msg"></div>
+  </section>
+
+  <!-- 保護者画面 -->
+  <section id="screen-parent" class="screen parent" aria-label="保護者画面">
+    <div class="parent-inner">
+      <header class="parent-head">
+        <h2>保護者画面</h2>
+        <button id="parent-close" class="pbtn primary" type="button">とじる</button>
+      </header>
+
+      <div class="pgrid">
+        <div class="pcard">
+          <h3>レベル</h3>
+          <div id="level-seg" class="seg">
+            <button type="button" data-level="1"><b>レベル1</b><small>0〜10<br>1か2</small></button>
+            <button type="button" data-level="2"><b>レベル2</b><small>0〜10<br>1〜3</small></button>
+            <button type="button" data-level="3"><b>レベル3</b><small>0〜20<br>1〜3</small></button>
+            <button type="button" data-level="4"><b>レベル4</b><small>0〜100<br>1〜9</small></button>
+            <button type="button" data-level="5"><b>レベル5</b><small>0〜100<br>1〜9・＋10</small></button>
+          </div>
+          <p class="note seg-note">1〜3：1マスずつタップ（3〜5歳）　4・5：行き先を当てる（6〜7歳）</p>
+          <p id="level-suggest" class="suggest" hidden></p>
+
+          <h3>設定</h3>
+          <label class="row-set">
+            <span>声かけヒントを表示</span>
+            <input id="set-hints" type="checkbox" class="switch">
+          </label>
+          <label class="row-set">
+            <span>1日のゲーム数の上限</span>
+            <select id="set-limit"></select>
+          </label>
+          <div class="row-set">
+            <span id="today-count">今日：0ゲーム</span>
+            <button id="btn-reset-today" class="pbtn" type="button">今日の回数を0にする</button>
+          </div>
+        </div>
+
+        <div class="pcard">
+          <h3>記録（直近14日）</h3>
+          <div class="table-wrap">
+            <table class="rec">
+              <thead><tr><th>日付</th><th>ゲーム</th><th>誤タップ</th><th>1手の平均時間</th></tr></thead>
+              <tbody id="rec-body"></tbody>
+            </table>
+          </div>
+          <h3>「かずの せん」チェック</h3>
+          <p class="note">両端の数だけが書かれた線に数の位置をタップしてもらい、ずれ（線の長さに対する%）を記録します。初回・1週間後・2週間後のように間をあけて行い、ずれが小さくなるかを見てください。レベル1〜3なら0〜10、レベル4・5なら0〜100がめやすです。</p>
+          <div class="check-btns">
+            <button id="btn-check10" class="pbtn primary" type="button">0〜10でチェック（5問）</button>
+            <button id="btn-check100" class="pbtn primary" type="button">0〜100でチェック（5問）</button>
+          </div>
+          <div id="check-chart" class="check-chart"></div>
+        </div>
+      </div>
+
+      <footer class="parent-foot">
+        <button id="btn-guide" class="pbtn" type="button">使い方を見る</button>
+        <button id="btn-clear" class="pbtn danger" type="button">記録をすべて消す</button>
+        <span id="version" class="version"></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- 使い方（初回） -->
+  <div id="guide-overlay" class="overlay guide" hidden>
+    <div class="guide-card">
+      <h2>保護者の方へ</h2>
+      <ul>
+        <li><b>ねらい：</b>数が直線上に等間隔に並び、右へ行くほど大きくなる感覚を、すごろく遊びで育てます。</li>
+        <li><b>遊び方：</b>ルーレットを回し、出た数だけ「次のマス」を1つずつタップして進みます。3にいて2が出たら「4、5」と、止まるマスの数字を言いながら進みます。</li>
+        <li><b>レベル4・5（6〜7歳）：</b>0〜100の線で遊びます。ルーレットの数だけ進んだ「行き先」のマスを当ててタップします。コマは36→40→43のように10の区切りを通って跳ぶので、「40まで あと4、そこから3」という繰り上がりの考え方が目で見えます。</li>
+        <li><b>いっしょに：</b>お子さんの横で、数字をいっしょに声に出してください。画面上部の小さな文字は声かけの例です。</li>
+        <li><b>長さ：</b>1日数分（初期設定は3ゲーム）で十分です。何日かに分けてくり返すことが大切です。</li>
+        <li><b>保護者画面：</b>右上の歯車を2秒長押しすると開きます。レベル・上限回数・記録を確認できます。</li>
+        <li><b>アプリの固定：</b>「設定 → アクセシビリティ → アクセスガイド」をオンにし、このアプリを開いた状態でトップボタン（またはホームボタン）を3回押すと、お子さんがアプリから出られなくなります。</li>
+        <li><b>記録：</b>このiPadの中だけに保存され、外部には送られません。</li>
+      </ul>
+      <button id="guide-ok" class="pbtn primary big" type="button">わかりました</button>
+    </div>
+  </div>
+
+  <!-- 保護者ゲート（歯車・2秒長押し） -->
+  <button id="gear" class="gear" type="button" aria-label="保護者画面（2秒長押し）">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle class="gear-ring-bg" cx="24" cy="24" r="21"/>
+      <circle class="gear-ring" cx="24" cy="24" r="21"/>
+      <path class="gear-body" d="M24 15.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17zm0 5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7z"/>
+      <g class="gear-teeth">
+        <rect x="22" y="11" width="4" height="5" rx="1"/><rect x="22" y="32" width="4" height="5" rx="1"/>
+        <rect x="11" y="22" width="5" height="4" rx="1"/><rect x="32" y="22" width="5" height="4" rx="1"/>
+        <rect x="22" y="11" width="4" height="5" rx="1" transform="rotate(45 24 24)"/><rect x="22" y="32" width="4" height="5" rx="1" transform="rotate(45 24 24)"/>
+        <rect x="11" y="22" width="5" height="4" rx="1" transform="rotate(45 24 24)"/><rect x="32" y="22" width="5" height="4" rx="1" transform="rotate(45 24 24)"/>
+      </g>
+    </svg>
+  </button>
+
+  <div id="rotate-overlay" class="rotate-overlay">
+    <div class="rotate-icon" aria-hidden="true"></div>
+    <p>よこむきに してね</p>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
