@@ -94,7 +94,34 @@ button {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse cx='26' cy='76' rx='9' ry='7' fill='%237CC27A'/%3E%3Cellipse cx='66' cy='76' rx='9' ry='7' fill='%237CC27A'/%3E%3Cellipse cx='12' cy='60' rx='7' ry='4' fill='%237CC27A'/%3E%3Ccircle cx='84' cy='50' r='13' fill='%238BD08A' stroke='%232C7A4E' stroke-width='3'/%3E%3Ccircle cx='88' cy='46' r='3.2' fill='%233A2A20'/%3E%3Cpath d='M84 56 Q88 59 92 56' fill='none' stroke='%233A2A20' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M12 68 Q14 26 46 24 Q76 24 78 68 Z' fill='%233FA46A' stroke='%232C7A4E' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M36 36 L56 36 L62 50 L56 63 L36 63 L30 50 Z' fill='%2357BD7F' stroke='%232C7A4E' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M30 50 L16 50 M62 50 L76 50 M36 36 L28 28 M56 36 L63 28' stroke='%232C7A4E' stroke-width='3'/%3E%3Crect x='10' y='64' width='70' height='7' rx='3.5' fill='%232C7A4E'/%3E%3C/svg%3E");
 }
 
+.p2-art {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='25' cy='20' r='11' fill='%235B9BFF' stroke='%232F6FD0' stroke-width='4'/%3E%3Ccircle cx='75' cy='20' r='11' fill='%235B9BFF' stroke='%232F6FD0' stroke-width='4'/%3E%3Crect x='10' y='16' width='80' height='76' rx='26' fill='%235B9BFF' stroke='%232F6FD0' stroke-width='5'/%3E%3Ccircle cx='37' cy='50' r='6' fill='%231F2A44'/%3E%3Ccircle cx='63' cy='50' r='6' fill='%231F2A44'/%3E%3Ccircle cx='39' cy='48' r='2' fill='%23fff'/%3E%3Ccircle cx='65' cy='48' r='2' fill='%23fff'/%3E%3Cellipse cx='25' cy='64' rx='7' ry='4.5' fill='%23C9DEFF'/%3E%3Cellipse cx='75' cy='64' rx='7' ry='4.5' fill='%23C9DEFF'/%3E%3Cpath d='M40 66 Q50 77 60 66' fill='none' stroke='%231F2A44' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
 /* ---------- タイトル ---------- */
+.start-choices { display: flex; gap: 32px; }
+.choice-btn {
+  border: none;
+  border-radius: 28px;
+  background: #fff;
+  padding: 18px 30px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--cell-line), 0 0 0 4px var(--cell-line) inset;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.choice-btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--cell-line), 0 0 0 4px var(--cell-line) inset; }
+#btn-start-auto { box-shadow: 0 6px 0 var(--kid-dark), 0 0 0 4px var(--kid) inset; }
+#btn-start-human { box-shadow: 0 6px 0 #2F6FD0, 0 0 0 4px #5B9BFF inset; }
+#btn-start-auto:active { box-shadow: 0 1px 0 var(--kid-dark), 0 0 0 4px var(--kid) inset; }
+#btn-start-human:active { box-shadow: 0 1px 0 #2F6FD0, 0 0 0 4px #5B9BFF inset; }
+.choice-pieces { display: flex; align-items: center; gap: 8px; }
+.choice-pieces .piece-art { width: clamp(64px, 8vw, 92px); height: clamp(64px, 8vw, 92px); }
+.choice-vs { font-size: 22px; font-weight: 700; color: var(--ink-soft); }
+.choice-label { font-size: clamp(26px, 3.4vw, 38px); font-weight: 700; letter-spacing: 0.08em; color: var(--ink); }
 #screen-title {
   flex-direction: column;
   align-items: center;
@@ -238,6 +265,18 @@ button {
   100% { transform: translateY(0); }
 }
 .piece.done .piece-art { animation: cheer 0.6s ease-in-out 3; }
+/* 手番のコマ */
+.piece.active::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  border: 4px solid #FFC23D;
+  background: rgba(255, 209, 102, 0.35);
+  animation: active-glow 1.4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes active-glow { 0%, 100% { opacity: 0.5; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.08); } }
 @keyframes cheer {
   0%, 100% { transform: rotate(0) scale(1); }
   30% { transform: rotate(-10deg) scale(1.1); }
@@ -336,6 +375,7 @@ button {
 .ov-label { font-size: 17px; font-weight: 700; fill: var(--ink); text-anchor: middle; font-family: var(--font); }
 .ov-kid { fill: var(--kid); stroke: var(--kid-dark); stroke-width: 1.5; stroke-linejoin: round; }
 .ov-turtle { fill: var(--turtle); stroke: #2C7A4E; stroke-width: 1.5; stroke-linejoin: round; }
+.ov-p2 { fill: #5B9BFF; stroke: #2F6FD0; stroke-width: 1.5; stroke-linejoin: round; }
 
 .strip { position: relative; }
 .strip.shift .col .cell { animation: fadein 0.35s ease-out; }
@@ -373,6 +413,8 @@ button {
 }
 .arc-label.kid { fill: var(--kid-dark); }
 .arc-label.turtle { fill: #2C7A4E; }
+.arc.p2 { stroke: #2F6FD0; }
+.arc-label.p2 { fill: #2F6FD0; }
 
 /* ---------- オーバーレイ ---------- */
 .overlay {

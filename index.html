@@ -25,12 +25,17 @@
       <div class="mini-row">
         <span class="mini-cell">1</span><span class="mini-cell">2</span><span class="mini-cell">3</span><span class="mini-cell">4</span><span class="mini-cell">5</span>
       </div>
-      <div class="mini-pieces">
-        <span class="piece-art kid-art"></span>
-        <span class="piece-art turtle-art"></span>
-      </div>
     </div>
-    <button id="btn-start" class="big-btn" type="button">はじめる</button>
+    <div id="start-choices" class="start-choices">
+      <button id="btn-start-auto" class="choice-btn" type="button" aria-label="かめさんと あそぶ">
+        <span class="choice-pieces"><span class="piece-art kid-art"></span><span class="choice-vs">と</span><span class="piece-art turtle-art"></span></span>
+        <span class="choice-label">かめさんと</span>
+      </button>
+      <button id="btn-start-human" class="choice-btn" type="button" aria-label="ふたりで あそぶ">
+        <span class="choice-pieces"><span class="piece-art kid-art"></span><span class="choice-vs">と</span><span class="piece-art p2-art"></span></span>
+        <span class="choice-label">ふたりで</span>
+      </button>
+    </div>
     <div id="title-limit" class="title-limit" hidden>
       <div class="moon" aria-hidden="true"></div>
       <p>また あしたね</p>
@@ -154,6 +159,7 @@
         <li><b>ねらい：</b>数が直線上に等間隔に並び、右へ行くほど大きくなる感覚を、すごろく遊びで育てます。</li>
         <li><b>遊び方：</b>ルーレットを回し、出た数だけ「次のマス」を1つずつタップして進みます。3にいて2が出たら「4、5」と、止まるマスの数字を言いながら進みます。</li>
         <li><b>レベル4・5（6〜7歳）：</b>0〜100の線で遊びます。ルーレットの数だけ進んだ「行き先」のマスを当ててタップします。コマは36→40→43のように10の区切りを通って跳ぶので、「40まで あと4、そこから3」という繰り上がりの考え方が目で見えます。</li>
+        <li><b>あいて：</b>タイトル画面で「かめさんと」（かめが自動で進む）か「ふたりで」（兄弟や保護者が青いコマで交互に遊ぶ）を選びます。記録するのはオレンジのコマの手番だけです。</li>
         <li><b>いっしょに：</b>お子さんの横で、数字をいっしょに声に出してください。画面上部の小さな文字は声かけの例です。</li>
         <li><b>長さ：</b>1日数分（初期設定は3ゲーム）で十分です。何日かに分けてくり返すことが大切です。</li>
         <li><b>保護者画面：</b>右上の歯車を2秒長押しすると開きます。レベル・上限回数・記録を確認できます。</li>

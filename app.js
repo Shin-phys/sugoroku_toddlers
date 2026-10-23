@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.2.0';
 
   // ---------- 定数 ----------
   // 数の読み方は仕様どおり統一（4=よん、7=なな、9=きゅう）
@@ -230,7 +230,7 @@
 
   function renderTitle() {
     const limited = limitReached();
-    $('#btn-start').hidden = limited;
+    $('#start-choices').hidden = limited;
     $('#title-limit').hidden = !limited;
   }
 
@@ -238,6 +238,8 @@
   const G = {
     level: 1, N: 10, die: [1, 2], mode: 'step', sparse: false,
     roll: 0, dest: 0, kidTurns: 0,
+    oppHuman: false,     // false = かめさん（自動）、true = ふたりで（あおさん）
+    turnsBy: { kid: 0, turtle: 0 },
     pos: { kid: 0, turtle: 0 },
     finished: { kid: false, turtle: false },
     turn: 'kid',
@@ -270,6 +272,11 @@
   let cols = [];
   let pieces = {};
 
+  // 相手の枠は内部では 'turtle'。ふたりで遊ぶときは見た目を「あおさん」(p2) にする。
+  function isHuman(who) { return who === 'kid' || G.oppHuman; }
+  function skin(who) { return who === 'kid' ? 'kid' : (G.oppHuman ? 'p2' : 'turtle'); }
+  function oppName() { return G.oppHuman ? 'あおさん' : 'かめさん'; }
+
   function buildBoard() {
     board.innerHTML = '';
     board.className = '';
@@ -293,7 +300,7 @@
       const p = document.createElement('div');
       p.className = `piece ${who}`;
       const art = document.createElement('div');
-      art.className = `piece-art ${who}-art`;
+      art.className = `piece-art ${skin(who)}-art`;
       p.appendChild(art);
       board.appendChild(p);
       pieces[who] = p;
@@ -357,7 +364,7 @@
 
   function setTurnIcon(who) {
     const el = $('#turn-icon');
-    el.innerHTML = `<div class="piece-art ${who}-art"></div>`;
+    el.innerHTML = `<div class="piece-art ${skin(who)}-art"></div>`;
   }
 
   function hintsFor() {
@@ -366,7 +373,7 @@
         'いま いくつ？',
         'つぎの 10の まとまりまで あといくつ？',
         '100まで あと いくつ？',
-        'かめさんと いくつ ちがう？',
+        `${oppName()}と いくつ ちがう？`,
         '10 すすむと どこ？',
         'じゅうの くらいは いくつ？',
       ];
@@ -374,7 +381,7 @@
     return [
       'いま どこ？',
       `${G.N}まで あといくつ？`,
-      'かめさんと どっちが まえ？',
+      `${oppName()}と どっちが まえ？`,
       'つぎは なんばん？',
       'いくつ すすむかな？',
       'いっしょに かぞえよう',
@@ -398,6 +405,7 @@
     G.mode = lv.mode;
     G.sparse = !!lv.sparse;
     G.kidTurns = 0;
+    G.turnsBy = { kid: 0, turtle: 0 };
     G.pos = { kid: 0, turtle: 0 };
     G.finished = { kid: false, turtle: false };
     G.stats = { steps: 0, mistaps: 0, stepMs: 0 };
@@ -420,26 +428,28 @@
     G.turn = who;
     G.phase = 'roll';
     setTurnIcon(who);
+    Object.keys(pieces).forEach((k) => pieces[k].classList.toggle('active', k === who));
     rouletteNum.textContent = '?';
-    roulette.className = 'roulette' + (who === 'kid' ? ' ready' : '');
+    roulette.className = 'roulette' + (isHuman(who) ? ' ready' : '');
     if (G.mode === 'jump') {
       clearArcs();
       setJumpGlow(-1);
       setWindow(winFor(G.pos[who]));
-      setPrompt(who === 'kid' ? 'ルーレットを タップ' : 'かめさんの ばん');
+      setPrompt(isHuman(who) ? 'ルーレットを タップ' : 'かめさんの ばん');
     }
-    if (who === 'kid') {
-      updateHint();
-    } else {
-      later(800, rollDie);
+    if (G.oppHuman) {
+      // ふたりで遊ぶときは、だれの番かを声で知らせる
+      Sound.say(`turn_${skin(who)}`, who === 'kid' ? 'オレンジさんの ばん' : 'あおさんの ばん');
     }
+    if (who === 'kid') updateHint();
+    if (!isHuman(who)) later(800, rollDie);
   }
 
   function other(who) { return who === 'kid' ? 'turtle' : 'kid'; }
 
   function onRouletteTap(e) {
     e.preventDefault();
-    if (G.turn !== 'kid' || G.phase !== 'roll' || now() < G.lockUntil) return;
+    if (!isHuman(G.turn) || G.phase !== 'roll' || now() < G.lockUntil) return;
     rollDie();
   }
 
@@ -474,7 +484,7 @@
     G.remaining = Math.min(v, G.N - G.pos[who]);
     later(900, () => {
       G.phase = 'move';
-      if (who === 'kid') {
+      if (isHuman(who)) {
         G.missThisStep = 0;
         G.lockUntil = now() + 150;
         G.stepStart = now();
@@ -487,38 +497,41 @@
   function onCellDown(e) {
     e.preventDefault();
     const n = Number(e.currentTarget.dataset.n);
-    if (G.turn !== 'kid' || G.phase !== 'move') return;
+    const who = G.turn;
+    if (!isHuman(who) || G.phase !== 'move') return;
     if (now() < G.lockUntil) return;
-    const target = G.pos.kid + 1;
-    if (n === G.pos.kid) return; // 自分のいるマスは数えない（誤タップにもしない）
+    const target = G.pos[who] + 1;
+    if (n === G.pos[who]) return; // 自分のいるマスは数えない（誤タップにもしない）
     const col = cols[n];
     col.classList.add('pressed');
     setTimeout(() => col.classList.remove('pressed'), 140);
 
     if (n === target) {
       const t = now();
-      G.stats.steps += 1;
-      G.stats.stepMs += Math.max(0, t - G.stepStart);
-      G.pos.kid = target;
+      if (who === 'kid') {   // 記録するのは子ども（オレンジ）の手番だけ
+        G.stats.steps += 1;
+        G.stats.stepMs += Math.max(0, t - G.stepStart);
+      }
+      G.pos[who] = target;
       G.remaining -= 1;
       G.missThisStep = 0;
       setGlow(-1);
-      placePiece('kid', true);
+      placePiece(who, true);
       markVisited();
-      Sound.fx('step');
+      Sound.fx(who === 'kid' ? 'step' : 'tstep');
       Sound.number(target);
       G.lockUntil = t + STEP_LOCK_MS;
       G.stepStart = t + STEP_LOCK_MS;
-      if (G.pos.kid === G.N) {
+      if (G.pos[who] === G.N) {
         G.phase = 'busy';
-        later(STEP_LOCK_MS, () => reachGoal('kid'));
+        later(STEP_LOCK_MS, () => reachGoal(who));
       } else if (G.remaining <= 0) {
         G.phase = 'busy';
         later(STEP_LOCK_MS + 200, endMove);
       }
     } else {
       // 飛ばしたマス・戻るマス：減点や×は出さない
-      G.stats.mistaps += 1;
+      if (who === 'kid') G.stats.mistaps += 1;
       G.missThisStep += 1;
       Sound.fx('miss');
       col.classList.remove('nudge');
@@ -632,7 +645,7 @@
       const p = document.createElement('div');
       p.className = `piece ${who}`;
       const art = document.createElement('div');
-      art.className = `piece-art ${who}-art`;
+      art.className = `piece-art ${skin(who)}-art`;
       p.appendChild(art);
       strip.appendChild(p);
       pieces[who] = p;
@@ -734,7 +747,7 @@
     }
     const k = x(G.pos.kid), t = x(G.pos.turtle);
     s += `<path class="ov-kid" d="M${k - 8} ${y - 26} L${k + 8} ${y - 26} L${k} ${y - 11} Z"/>`;
-    s += `<path class="ov-turtle" d="M${t - 6} ${y + 19} L${t + 6} ${y + 19} L${t} ${y + 9} Z"/>`;
+    s += `<path class="ov-${skin('turtle')}" d="M${t - 6} ${y + 19} L${t + 6} ${y + 19} L${t} ${y + 9} Z"/>`;
     ov.innerHTML = s;
   }
 
@@ -773,9 +786,9 @@
   function landJump(v, who) {
     G.roll = v;
     G.dest = Math.min(G.pos[who] + v, G.N);
-    if (who === 'kid') {
-      G.kidTurns += 1;
-      const ask = G.kidTurns <= 2;
+    if (isHuman(who)) {
+      G.turnsBy[who] += 1;
+      const ask = G.turnsBy[who] <= 2;
       later(150, () => Sound.number(v).then(() => {
         if (ask && G.phase === 'guess') Sound.say('dokoni', 'どこに とまるかな？');
       }));
@@ -808,7 +821,7 @@
     let t = 0;
     segs.forEach(([a, b]) => {
       later(t, () => {
-        drawArc(a, b, `+${b - a}`, who);
+        drawArc(a, b, `+${b - a}`, skin(who));
         G.pos[who] = b;
         placeJumpPiece(who, true);
         Sound.fx(who === 'kid' ? 'step' : 'tstep');
@@ -825,9 +838,10 @@
 
   function onJumpCellDown(e) {
     e.preventDefault();
-    if (G.turn !== 'kid' || G.phase !== 'guess' || now() < G.lockUntil) return;
+    const who = G.turn;
+    if (!isHuman(who) || G.phase !== 'guess' || now() < G.lockUntil) return;
     const n = J.win + Number(e.currentTarget.dataset.i);
-    const from = G.pos.kid;
+    const from = G.pos[who];
     if (n === from) return;
     const col = e.currentTarget;
     col.classList.add('pressed');
@@ -835,13 +849,15 @@
 
     if (n === G.dest) {
       const t = now();
-      G.stats.steps += 1;
-      G.stats.stepMs += Math.max(0, t - G.stepStart);
-      animateJump('kid', afterJump);
+      if (who === 'kid') {
+        G.stats.steps += 1;
+        G.stats.stepMs += Math.max(0, t - G.stepStart);
+      }
+      animateJump(who, afterJump);
       return;
     }
     // 外れ：×や減点は出さない
-    G.stats.mistaps += 1;
+    if (who === 'kid') G.stats.mistaps += 1;
     G.missThisStep += 1;
     G.lockUntil = now() + 400;
     Sound.fx('miss');
@@ -855,7 +871,7 @@
         Sound.say('goaldetomaru', `${reading(G.N)}で とまるよ`);
       } else if (G.roll !== 10 && G.dest > via) {
         clearArcs();
-        drawArc(from, via, `あと${via - from}`, 'kid', true);
+        drawArc(from, via, `あと${via - from}`, skin(who), true);
         setPrompt(`${via}まで あと いくつ？`);
         Sound.say(`made${via}`, `${reading(via)}まで あと いくつ？`);
       } else {
@@ -875,7 +891,8 @@
     rec.steps += G.stats.steps;
     rec.mistaps += G.stats.mistaps;
     rec.stepMs += G.stats.stepMs;
-    data.games.push({ ts: Date.now(), level: G.level, ...G.stats });
+    if (G.oppHuman) rec.human = (rec.human || 0) + 1;
+    data.games.push({ ts: Date.now(), level: G.level, opp: G.oppHuman ? 'human' : 'auto', ...G.stats });
     if (data.games.length > 300) data.games = data.games.slice(-300);
     saveData();
 
@@ -906,12 +923,17 @@
   });
   $('#btn-quit').addEventListener('click', () => { Sound.fx('tap'); quitToTitle(); });
 
-  $('#btn-start').addEventListener('click', () => {
+  function startFromTitle(human) {
     Sound.unlock();
     Sound.fx('tap');
     if (limitReached()) { renderTitle(); return; }
+    G.oppHuman = human;
+    data.settings.lastOpp = human ? 'human' : 'auto';
+    saveData();
     newGame();
-  });
+  }
+  $('#btn-start-auto').addEventListener('click', () => startFromTitle(false));
+  $('#btn-start-human').addEventListener('click', () => startFromTitle(true));
 
   // ---------- 保護者ゲート（歯車を2秒長押し） ----------
   const gear = $('#gear');
@@ -989,7 +1011,8 @@
       const [, m, d] = k.split('-');
       const avg = r.steps ? `${(r.stepMs / r.steps / 1000).toFixed(1)} 秒` : '—';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${Number(m)}/${Number(d)}</td><td>${r.games}</td><td>${r.mistaps}</td><td>${avg}</td>`;
+      const games = r.human ? `${r.games}（ふたり${r.human}）` : `${r.games}`;
+      tr.innerHTML = `<td>${Number(m)}/${Number(d)}</td><td>${games}</td><td>${r.mistaps}</td><td>${avg}</td>`;
       body.appendChild(tr);
     });
   }

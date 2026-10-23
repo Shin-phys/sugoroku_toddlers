@@ -2,7 +2,7 @@
  * アプリを更新したら VERSION を必ず上げる（例：v1.0.1）。
  * 次にオンラインで起動したとき、新しい版に切り替わる。
  */
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.2.0';
 const CACHE = `kazu-sugoroku-${VERSION}`;
 const CORE = [
   './',
