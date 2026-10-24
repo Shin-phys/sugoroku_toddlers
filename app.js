@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '1.2.0';
+  const APP_VERSION = '1.3.0';
 
   // ---------- 定数 ----------
   // 数の読み方は仕様どおり統一（4=よん、7=なな、9=きゅう）
@@ -29,11 +29,22 @@
 
   const STEP_LOCK_MS = 800;     // 数字の読み上げ後、次の操作を受け付けるまでの待ち
   const TURTLE_STEP_MS = 950;   // かめが1マス進む間隔
-  const SPIN_MS = 1000;         // ルーレットが回る時間
+  const SPIN_MS = 1000;         // ルーレットが回る時間（かめさん）
+  const FACE_MS = 500;          // 止めるルーレット：1つの数を見せる時間
+  const SLIP_P = 0.2;           // 止めたあと、1つすべる確率（運の要素を残す）
+  const HAND_N = 3;             // レベル4・5の手札の枚数
   const JUMP_SEG_MS = 750;      // レベル4・5で1区間（例 36→40）を跳ぶ時間
   const WIN_SPAN = 20;          // レベル4・5の拡大帯は21マス（例 30〜50）
   const CHECK_SETS = { 10: [2, 3, 5, 7, 8], 100: [6, 18, 42, 71, 89] };
   const SVGNS = 'http://www.w3.org/2000/svg';
+  const shuffle = (a) => {
+    const b = a.slice();
+    for (let i = b.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  };
 
   const $ = (sel) => document.querySelector(sel);
   const now = () => performance.now();
@@ -197,6 +208,8 @@
         case 'tstep': this.tone(420, 0.12, { to: 620, vol: 0.10 }); break;
         case 'miss': this.tone(260, 0.18, { type: 'triangle', to: 220, vol: 0.08 }); break;
         case 'tick': this.tone(1100, 0.03, { type: 'square', vol: 0.03 }); break;
+        case 'stop': this.tone(880, 0.09, { type: 'square', vol: 0.06 }); break;
+        case 'star': [988, 1319, 1568].forEach((f, i) => this.tone(f, 0.18, { type: 'triangle', vol: 0.12, delay: i * 0.08 })); break;
         case 'land': this.tone(660, 0.12, { vol: 0.14 }); this.tone(990, 0.2, { vol: 0.12, delay: 0.1 }); break;
         case 'goal':
           [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.25, { type: 'triangle', vol: 0.15, delay: i * 0.12 }));
@@ -240,6 +253,13 @@
     roll: 0, dest: 0, kidTurns: 0,
     oppHuman: false,     // false = かめさん（自動）、true = ふたりで（あおさん）
     turnsBy: { kid: 0, turtle: 0 },
+    stars: new Set(),    // 星のマス
+    got: { kid: 0, turtle: 0 },
+    hands: { kid: [], turtle: [] },
+    deck: [],
+    cycle: null,         // 止めるルーレットのタイマー
+    face: 0,
+    over: false,         // ゴールを超える目だったか
     pos: { kid: 0, turtle: 0 },
     finished: { kid: false, turtle: false },
     turn: 'kid',
@@ -261,6 +281,7 @@
     G.timers.push(id);
   }
   function clearTimers() {
+    stopCycle();
     G.timers.forEach(clearTimeout);
     G.timers = [];
   }
@@ -305,6 +326,7 @@
       board.appendChild(p);
       pieces[who] = p;
     });
+    renderStepStars();
   }
 
   let geom = { cell: 80, gap: 10, lane: 70, piece: 60 };
@@ -376,6 +398,8 @@
         `${oppName()}と いくつ ちがう？`,
         '10 すすむと どこ？',
         'じゅうの くらいは いくつ？',
+        'どの カードが いい？',
+        'ほしの マスまで あと いくつ？',
       ];
     }
     return [
@@ -385,6 +409,8 @@
       'つぎは なんばん？',
       'いくつ すすむかな？',
       'いっしょに かぞえよう',
+      'いくつ ほしい？',
+      'ほしの マスまで あと いくつ？',
     ];
   }
   function updateHint() {
@@ -406,6 +432,10 @@
     G.sparse = !!lv.sparse;
     G.kidTurns = 0;
     G.turnsBy = { kid: 0, turtle: 0 };
+    G.got = { kid: 0, turtle: 0 };
+    G.hands = { kid: [], turtle: [] };
+    G.deck = [];
+    G.stars = makeStars();
     G.pos = { kid: 0, turtle: 0 };
     G.finished = { kid: false, turtle: false };
     G.stats = { steps: 0, mistaps: 0, stepMs: 0 };
@@ -418,6 +448,7 @@
     $('#end-overlay').hidden = true;
     setPrompt('');
     if (G.mode === 'jump') buildJumpBoard(); else buildBoard();
+    renderStarUI();
     show('game');
     layoutBoard();
     later(500, () => startTurn('kid'));
@@ -430,19 +461,126 @@
     setTurnIcon(who);
     Object.keys(pieces).forEach((k) => pieces[k].classList.toggle('active', k === who));
     rouletteNum.textContent = '?';
-    roulette.className = 'roulette' + (isHuman(who) ? ' ready' : '');
+    const humanTurn = isHuman(who);
+    const useHand = G.mode === 'jump' && humanTurn;
+    roulette.hidden = useHand;
+    handEl.hidden = !useHand;
+    roulette.className = 'roulette' + (humanTurn && !useHand ? ' ready' + (who === 'turtle' ? ' p2' : '') : '');
     if (G.mode === 'jump') {
       clearArcs();
       setJumpGlow(-1);
       setWindow(winFor(G.pos[who]));
-      setPrompt(isHuman(who) ? 'ルーレットを タップ' : 'かめさんの ばん');
+      setPrompt(useHand ? 'カードを えらんでね' : 'かめさんの ばん');
     }
     if (G.oppHuman) {
       // ふたりで遊ぶときは、だれの番かを声で知らせる
       Sound.say(`turn_${skin(who)}`, who === 'kid' ? 'オレンジさんの ばん' : 'あおさんの ばん');
     }
     if (who === 'kid') updateHint();
-    if (!isHuman(who)) later(800, rollDie);
+    if (useHand) renderHand(who);
+    else if (humanTurn) startCycle();
+    else later(800, rollDie);
+  }
+
+  // ---------- 止めるルーレット（レベル1〜3の人の番） ----------
+  // 数字はランダムな順に FACE_MS ごとに切り替わる。タップで止まるが、ときどき1つすべる。
+  function nextFace(cur) {
+    const opts = G.die.filter((v) => v !== cur);
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+  function stopCycle() {
+    if (G.cycle) { clearInterval(G.cycle); G.cycle = null; }
+  }
+  function showFace(v) {
+    G.face = v;
+    rouletteNum.textContent = String(v);
+    rouletteNum.classList.remove('flip');
+    void rouletteNum.offsetWidth;
+    rouletteNum.classList.add('flip');
+  }
+  function startCycle() {
+    stopCycle();
+    showFace(nextFace(0));
+    G.lockUntil = now() + 300;
+    G.cycle = setInterval(() => showFace(nextFace(G.face)), FACE_MS);
+  }
+
+  // ---------- カード（レベル4・5の人の番） ----------
+  const handEl = $('#hand');
+  function refillHand(who) {
+    const h = G.hands[who];
+    while (h.length < HAND_N) {
+      if (!G.deck.length) {
+        const d = [];
+        G.die.forEach((v) => { for (let k = 0; k < 3; k++) d.push(v); });
+        G.deck = shuffle(d);
+      }
+      h.push(G.deck.pop());
+    }
+  }
+  function renderHand(who) {
+    refillHand(who);
+    handEl.className = 'hand' + (who === 'turtle' ? ' p2' : '');
+    handEl.innerHTML = '';
+    G.hands[who].forEach((v, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hcard';
+      b.dataset.i = String(i);
+      b.textContent = String(v);
+      b.setAttribute('aria-label', `${v}の カード`);
+      b.addEventListener('pointerdown', onHandTap);
+      handEl.appendChild(b);
+    });
+    G.lockUntil = now() + 300;
+  }
+  function onHandTap(e) {
+    e.preventDefault();
+    const who = G.turn;
+    if (!isHuman(who) || G.phase !== 'roll' || now() < G.lockUntil) return;
+    const i = Number(e.currentTarget.dataset.i);
+    const v = G.hands[who][i];
+    G.hands[who].splice(i, 1);
+    G.phase = 'spinning';
+    handEl.querySelectorAll('.hcard').forEach((b) => b.classList.add(b === e.currentTarget ? 'chosen' : 'dim'));
+    Sound.fx('land');
+    landJump(v, who);
+  }
+
+  // ---------- 星のマス ----------
+  function makeStars() {
+    const N = LEVELS[data.settings.level] ? LEVELS[data.settings.level].max : 10;
+    const count = N === 10 ? 3 : (N === 20 ? 4 : 7);
+    const gap = N === 100 ? 6 : 2;
+    const lo = N === 100 ? 4 : 2, hi = N - 2;
+    const set = new Set();
+    for (let tries = 0; tries < 500 && set.size < count; tries++) {
+      const c = lo + Math.floor(Math.random() * (hi - lo + 1));
+      if ([...set].every((s) => Math.abs(s - c) >= gap)) set.add(c);
+    }
+    return set;
+  }
+  function renderStepStars() {
+    cols.forEach((c, i) => c.classList.toggle('has-star', G.stars.has(i)));
+  }
+  function renderStarUI() {
+    const chip = (who) => `<span class="chip"><span class="piece-art ${skin(who)}-art"></span><b>★</b>${G.got[who]}</span>`;
+    const html = chip('kid') + chip('turtle');
+    $('#star-ui').innerHTML = html;
+    $('#end-stars').innerHTML = html;
+  }
+  // 1手の終わり：星のマスなら星をもらう
+  function finishMove(who) {
+    const n = G.pos[who];
+    if (!G.stars.has(n)) { endMove(); return; }
+    G.stars.delete(n);
+    G.got[who] += 1;
+    renderStarUI();
+    if (G.mode === 'jump') renderJump(); else renderStepStars();
+    burstStars(n);
+    Sound.fx('star');
+    later(250, () => Sound.say('stargot', 'ほし ゲット！'));
+    later(1600, endMove);
   }
 
   function other(who) { return who === 'kid' ? 'turtle' : 'kid'; }
@@ -450,7 +588,23 @@
   function onRouletteTap(e) {
     e.preventDefault();
     if (!isHuman(G.turn) || G.phase !== 'roll' || now() < G.lockUntil) return;
-    rollDie();
+    if (G.mode === 'jump') return; // レベル4・5はカードで選ぶ
+    stopCycle();
+    G.phase = 'spinning';
+    roulette.className = 'roulette stopped';
+    Sound.fx('stop');
+    let v = G.face;
+    if (Math.random() < SLIP_P) {
+      // すべる：1つだけ別の数に進んでから止まる
+      later(280, () => {
+        v = nextFace(v);
+        showFace(v);
+        Sound.fx('tick');
+        later(320, () => land(v));
+      });
+    } else {
+      later(200, () => land(v));
+    }
   }
 
   function rollDie() {
@@ -461,7 +615,7 @@
     const tick = () => {
       const t = now() - start;
       if (t >= SPIN_MS) {
-        land();
+        land(G.die[Math.floor(Math.random() * G.die.length)]);
         return;
       }
       shown = (shown % G.die.length) + 1;
@@ -473,8 +627,7 @@
     tick();
   }
 
-  function land() {
-    const v = G.die[Math.floor(Math.random() * G.die.length)];
+  function land(v) {
     rouletteNum.textContent = String(v);
     roulette.className = 'roulette result';
     Sound.fx('land');
@@ -482,6 +635,7 @@
     if (G.mode === 'jump') { landJump(v, who); return; }
     later(150, () => Sound.number(v));
     G.remaining = Math.min(v, G.N - G.pos[who]);
+    G.over = v > G.N - G.pos[who];
     later(900, () => {
       G.phase = 'move';
       if (isHuman(who)) {
@@ -527,7 +681,7 @@
         later(STEP_LOCK_MS, () => reachGoal(who));
       } else if (G.remaining <= 0) {
         G.phase = 'busy';
-        later(STEP_LOCK_MS + 200, endMove);
+        later(STEP_LOCK_MS + 200, () => finishMove(who));
       }
     } else {
       // 飛ばしたマス・戻るマス：減点や×は出さない
@@ -552,7 +706,7 @@
       G.phase = 'busy';
       later(TURTLE_STEP_MS, () => reachGoal('turtle'));
     } else if (G.remaining <= 0) {
-      later(TURTLE_STEP_MS + 200, endMove);
+      later(TURTLE_STEP_MS + 200, () => finishMove('turtle'));
     } else {
       later(TURTLE_STEP_MS, turtleStep);
     }
@@ -563,7 +717,9 @@
     pieces[who].classList.add('done');
     burstStars(G.N);
     Sound.fx('goal');
-    later(450, () => Sound.say('goal', 'ゴール！'));
+    const exact = !G.over;
+    if (exact) later(500, () => burstStars(G.N));
+    later(450, () => (exact ? Sound.say('pittarigoal', 'ぴったり ゴール！') : Sound.say('goal', 'ゴール！')));
     later(1900, () => {
       pieces[who].classList.remove('done');
       endMove();
@@ -710,6 +866,7 @@
       c.classList.toggle('decade', n % 10 === 0);
       c.classList.toggle('goal', n === G.N);
       c.classList.toggle('blank', !shown);
+      c.classList.toggle('has-star', G.stars.has(n));
       c.setAttribute('aria-label', `${n}のマス`);
     });
     placeJumpPiece('kid');
@@ -745,6 +902,7 @@
       s += `<line class="ov-tick${big ? ' big' : ''}" x1="${x(v)}" x2="${x(v)}" y1="${y - h}" y2="${y + h}"/>`;
       if (big) s += `<text class="ov-label" x="${x(v)}" y="${y + 37}">${v}</text>`;
     }
+    G.stars.forEach((v) => { s += `<circle class="ov-star" cx="${x(v)}" cy="${y}" r="5"/>`; });
     const k = x(G.pos.kid), t = x(G.pos.turtle);
     s += `<path class="ov-kid" d="M${k - 8} ${y - 26} L${k + 8} ${y - 26} L${k} ${y - 11} Z"/>`;
     s += `<path class="ov-${skin('turtle')}" d="M${t - 6} ${y + 19} L${t + 6} ${y + 19} L${t} ${y + 9} Z"/>`;
@@ -786,6 +944,7 @@
   function landJump(v, who) {
     G.roll = v;
     G.dest = Math.min(G.pos[who] + v, G.N);
+    G.over = G.pos[who] + v > G.N;
     if (isHuman(who)) {
       G.turnsBy[who] += 1;
       const ask = G.turnsBy[who] <= 2;
@@ -807,7 +966,7 @@
 
   function afterJump(who) {
     if (G.pos[who] === G.N) reachGoal(who);
-    else endMove();
+    else finishMove(who);
   }
 
   // 10の区切りを経由して跳ぶ（例 36→40→43）。＋10は1回で跳ぶ。
@@ -892,7 +1051,7 @@
     rec.mistaps += G.stats.mistaps;
     rec.stepMs += G.stats.stepMs;
     if (G.oppHuman) rec.human = (rec.human || 0) + 1;
-    data.games.push({ ts: Date.now(), level: G.level, opp: G.oppHuman ? 'human' : 'auto', ...G.stats });
+    data.games.push({ ts: Date.now(), level: G.level, opp: G.oppHuman ? 'human' : 'auto', stars: G.got.kid, ...G.stats });
     if (data.games.length > 300) data.games = data.games.slice(-300);
     saveData();
 
@@ -1189,7 +1348,12 @@
       else pendingReload = true;  // 遊んでいる途中なら、タイトルに戻ったときに新版へ
     });
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => { /* オフライン化なしでも動く */ });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+        // ホーム画面のアプリは裏で止まっているだけのことが多いので、画面に戻るたびに更新を確かめる
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && navigator.onLine) reg.update().catch(() => {});
+        });
+      }).catch(() => { /* オフライン化なしでも動く */ });
     });
   }
 

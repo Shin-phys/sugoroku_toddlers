@@ -639,3 +639,48 @@ body.no-gear .gear { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .piece, .piece .piece-art, .roulette, .star { animation: none !important; transition: none !important; }
 }
+
+/* ---------- v1.3：止めるルーレット・カード・星のマス ---------- */
+.roulette.ready.p2 { border-color: #5B9BFF; }
+.roulette.stopped { opacity: 1; border-color: var(--gold-dark); }
+.roulette-num.flip { animation: flip 0.18s ease-out; }
+@keyframes flip { 0% { transform: scale(0.75); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+
+.hand { display: flex; gap: 14px; }
+.hcard {
+  width: 92px;
+  height: 120px;
+  border-radius: 16px;
+  border: 4px solid var(--kid);
+  background: #fff;
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--kid-dark);
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s, background 0.2s;
+}
+.hcard:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--kid-dark); }
+.hand.p2 .hcard { border-color: #5B9BFF; box-shadow: 0 6px 0 #2F6FD0; }
+.hcard.chosen { background: #FFF1C7; transform: translateY(-10px); }
+.hcard.dim { opacity: 0.3; }
+
+.col.has-star .cell::before {
+  content: "";
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  width: 34%;
+  height: 34%;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5l3.1 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.3 5.6 20.9l1.5-7.1L1.7 8.9l7.2-.8z' fill='%23FFD166' stroke='%23E8A600' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.col.has-star .cell { background: #FFFBEA; }
+.ov-star { fill: #FFD166; stroke: #E8A600; stroke-width: 1.5; }
+
+.star-ui { margin-left: auto; display: flex; gap: 16px; }
+.star-ui .chip { display: flex; align-items: center; gap: 4px; font-size: 22px; font-weight: 700; color: var(--ink); }
+.star-ui .chip .piece-art { width: 32px; height: 32px; }
+.star-ui .chip b { color: #E8A600; font-size: 20px; }
+.end-stars { margin: 0 auto 22px; justify-content: center; }
+.end-stars .chip { font-size: 30px; }
+.end-stars .chip .piece-art { width: 44px; height: 44px; }

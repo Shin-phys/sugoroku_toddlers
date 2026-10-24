@@ -46,6 +46,7 @@
   <section id="screen-game" class="screen" aria-label="すごろく">
     <div class="topbar">
       <div id="hint" class="hint" aria-live="polite"></div>
+      <div id="star-ui" class="star-ui" aria-label="あつめた ほし"></div>
     </div>
     <div id="board-wrap">
       <div id="board"></div>
@@ -54,6 +55,7 @@
       <button id="roulette" class="roulette" type="button" aria-label="ルーレット">
         <span id="roulette-num" class="roulette-num">?</span>
       </button>
+      <div id="hand" class="hand" hidden></div>
       <div id="turn-icon" class="turn-icon" aria-hidden="true"></div>
       <div id="prompt" class="prompt" aria-live="polite"></div>
     </div>
@@ -63,6 +65,7 @@
   <div id="end-overlay" class="overlay" hidden>
     <div class="end-card">
       <div class="end-star" aria-hidden="true"></div>
+      <div id="end-stars" class="star-ui end-stars"></div>
       <div id="end-limit" class="end-limit" hidden>
         <div class="moon" aria-hidden="true"></div>
         <p>また あしたね</p>
@@ -157,8 +160,9 @@
       <h2>保護者の方へ</h2>
       <ul>
         <li><b>ねらい：</b>数が直線上に等間隔に並び、右へ行くほど大きくなる感覚を、すごろく遊びで育てます。</li>
-        <li><b>遊び方：</b>ルーレットを回し、出た数だけ「次のマス」を1つずつタップして進みます。3にいて2が出たら「4、5」と、止まるマスの数字を言いながら進みます。</li>
-        <li><b>レベル4・5（6〜7歳）：</b>0〜100の線で遊びます。ルーレットの数だけ進んだ「行き先」のマスを当ててタップします。コマは36→40→43のように10の区切りを通って跳ぶので、「40まで あと4、そこから3」という繰り上がりの考え方が目で見えます。</li>
+        <li><b>遊び方：</b>ルーレットの数字は0.5秒ごとにランダムに変わり、タップすると止まります（ときどき1つすべるので、ねらい通りにならないこともあります）。出た数だけ「次のマス」を1つずつタップして進みます。3にいて2が出たら「4、5」と、止まるマスの数字を言いながら進みます。</li>
+        <li><b>ほしの マス：</b>ちょうど止まると星がもらえます。「いくつ ほしい？」「ほしまで あといくつ？」と聞いてみてください。ゴールにちょうど止まると「ぴったり ゴール」になります。</li>
+        <li><b>レベル4・5（6〜7歳）：</b>0〜100の線で遊びます。ルーレットの代わりに3枚のカードから1枚を選び、その数だけ進んだ「行き先」のマスを当ててタップします。どのカードを使うかで、星のマスやゴールをねらえます。コマは36→40→43のように10の区切りを通って跳ぶので、「40まで あと4、そこから3」という繰り上がりの考え方が目で見えます。</li>
         <li><b>あいて：</b>タイトル画面で「かめさんと」（かめが自動で進む）か「ふたりで」（兄弟や保護者が青いコマで交互に遊ぶ）を選びます。記録するのはオレンジのコマの手番だけです。</li>
         <li><b>いっしょに：</b>お子さんの横で、数字をいっしょに声に出してください。画面上部の小さな文字は声かけの例です。</li>
         <li><b>長さ：</b>1日数分（初期設定は3ゲーム）で十分です。何日かに分けてくり返すことが大切です。</li>
