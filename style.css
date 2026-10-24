@@ -684,3 +684,39 @@ body.no-gear .gear { display: none; }
 .end-stars { margin: 0 auto 22px; justify-content: center; }
 .end-stars .chip { font-size: 30px; }
 .end-stars .chip .piece-art { width: 44px; height: 44px; }
+
+/* ---------- v1.4：スマホ（横向き・高さ500px未満） ---------- */
+body.compact .topbar { height: 40px; padding: 0 64px 0 16px; }
+body.compact .hint { font-size: 13px; }
+body.compact .hint:not(:empty)::before { font-size: 11px; }
+body.compact .star-ui { gap: 12px; }
+body.compact .star-ui .chip { font-size: 17px; }
+body.compact .star-ui .chip .piece-art { width: 24px; height: 24px; }
+body.compact .star-ui .chip b { font-size: 15px; }
+body.compact #board-wrap { padding: 0 12px; }
+body.compact .bottombar { height: 100px; padding: 0 0 6px 16px; gap: 12px; }
+body.compact .roulette { width: 84px; height: 84px; border-width: 4px; }
+body.compact .roulette::before { inset: 7px; }
+body.compact .roulette-num { font-size: 42px; }
+body.compact .turn-icon { width: 46px; height: 46px; }
+body.compact .prompt { font-size: 22px; margin-left: 4px; }
+body.compact .hand { gap: 10px; }
+body.compact .hcard { width: 66px; height: 86px; font-size: 40px; border-width: 3px; border-radius: 12px; box-shadow: 0 4px 0 var(--kid-dark); }
+body.compact .hand.p2 .hcard { box-shadow: 0 4px 0 #2F6FD0; }
+body.compact .gear { width: 44px; height: 44px; top: calc(var(--safe-top) + 2px); }
+body.compact .ov-label { font-size: 14px; }
+body.compact .check-num { font-size: 64px; height: 72px; margin-bottom: 8px; }
+body.compact .check-area { height: 120px; }
+body.compact .nl-tick span { font-size: 30px; top: 50px; }
+body.compact .check-msg { height: 40px; margin-top: 8px; font-size: 28px; }
+body.compact .end-card { padding: 18px 28px 22px; }
+body.compact .end-star { width: 64px; height: 64px; margin-bottom: 6px; }
+body.compact .end-limit { font-size: 28px; margin-bottom: 12px; }
+body.compact .end-limit .moon { width: 56px; height: 56px; }
+body.compact .end-stars { margin-bottom: 14px; }
+body.compact .end-stars .chip { font-size: 22px; }
+body.compact .end-stars .chip .piece-art { width: 32px; height: 32px; }
+body.compact .big-btn { font-size: 26px; }
+
+.big-btn { white-space: nowrap; }
+@media (max-width: 900px) { .seg button { font-size: 12px; } .seg button b { white-space: nowrap; } }

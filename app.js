@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '1.3.0';
+  const APP_VERSION = '1.4.0';
 
   // ---------- 定数 ----------
   // 数の読み方は仕様どおり統一（4=よん、7=なな、9=きゅう）
@@ -34,7 +34,12 @@
   const SLIP_P = 0.2;           // 止めたあと、1つすべる確率（運の要素を残す）
   const HAND_N = 3;             // レベル4・5の手札の枚数
   const JUMP_SEG_MS = 750;      // レベル4・5で1区間（例 36→40）を跳ぶ時間
-  const WIN_SPAN = 20;          // レベル4・5の拡大帯は21マス（例 30〜50）
+  let WIN_SPAN = 20;            // レベル4・5の拡大帯は21マス（例 30〜50）。スマホでは16マス（例 35〜50）
+  // スマホ（横向きで高さが低い画面）かどうか
+  const isCompact = () => window.innerHeight < 500;
+  const applyCompact = () => document.body.classList.toggle('compact', isCompact());
+  applyCompact();
+  window.addEventListener('resize', applyCompact);
   const CHECK_SETS = { 10: [2, 3, 5, 7, 8], 100: [6, 18, 42, 71, 89] };
   const SVGNS = 'http://www.w3.org/2000/svg';
   const shuffle = (a) => {
@@ -334,14 +339,15 @@
     if (G.mode === 'jump') { layoutJump(); return; }
     if (!cols.length) return;
     const n = G.N + 1;
-    const availW = boardWrap.clientWidth - 48;
+    const availW = boardWrap.clientWidth - (isCompact() ? 8 : 48);
     const availH = boardWrap.clientHeight;
+    const ratio = isCompact() ? 1.08 : 1.14;   // スマホはマスのすき間を詰めて、マスを大きくする
     let per = Math.min(130, availW / n);
-    let cell = per / 1.14;
+    let cell = per / ratio;
     const laneRatio = 0.85;
     if (cell * (1 + 2 * laneRatio) > availH) {
       cell = availH / (1 + 2 * laneRatio);
-      per = cell * 1.14;
+      per = cell * ratio;
     }
     const gap = per - cell;
     const lane = cell * laneRatio;
@@ -431,6 +437,7 @@
     G.mode = lv.mode;
     G.sparse = !!lv.sparse;
     G.kidTurns = 0;
+    WIN_SPAN = isCompact() ? 15 : 20;
     G.turnsBy = { kid: 0, turtle: 0 };
     G.got = { kid: 0, turtle: 0 };
     G.hands = { kid: [], turtle: [] };
@@ -762,7 +769,9 @@
   }
 
   function winFor(pos) {
-    return Math.max(0, Math.min(G.N - WIN_SPAN, Math.floor(pos / 10) * 10));
+    // 帯は10（スマホは5）の区切りから始め、行き先（最大+10）が必ず帯の中に入るようにする
+    const step = WIN_SPAN - 10;
+    return Math.max(0, Math.min(G.N - WIN_SPAN, Math.floor(pos / step) * step));
   }
   function jx(n) { return (n - J.win) * J.geom.per + J.geom.per / 2; }
   function inWin(n) { return n >= J.win && n <= J.win + WIN_SPAN; }
@@ -814,7 +823,7 @@
     const n = WIN_SPAN + 1;
     const availW = boardWrap.clientWidth - 48;
     const availH = boardWrap.clientHeight;
-    const OVH = 84, GAP = 18;
+    const OVH = isCompact() ? 58 : 84, GAP = isCompact() ? 6 : 18;
     let per = Math.min(64, availW / n);
     let cell = per * 0.88;
     let lane = cell * 1.55;
@@ -889,7 +898,7 @@
 
   function renderOverview() {
     const ov = J.overview;
-    const W = J.geom.width, H = J.geom.ovh, L = 16, R = 16, y = 34;
+    const W = J.geom.width, H = J.geom.ovh, L = 16, R = 16, y = H < 70 ? 22 : 34;
     const x = (v) => L + (v / G.N) * (W - L - R);
     let s = '';
     // 拡大帯の範囲と、帯へのつながり
@@ -900,7 +909,7 @@
       const big = v % 10 === 0, mid = v % 5 === 0;
       const h = big ? 9 : (mid ? 6 : 3.5);
       s += `<line class="ov-tick${big ? ' big' : ''}" x1="${x(v)}" x2="${x(v)}" y1="${y - h}" y2="${y + h}"/>`;
-      if (big) s += `<text class="ov-label" x="${x(v)}" y="${y + 37}">${v}</text>`;
+      if (big) s += `<text class="ov-label" x="${x(v)}" y="${y + (H < 70 ? 29 : 37)}">${v}</text>`;
     }
     G.stars.forEach((v) => { s += `<circle class="ov-star" cx="${x(v)}" cy="${y}" r="5"/>`; });
     const k = x(G.pos.kid), t = x(G.pos.turtle);
